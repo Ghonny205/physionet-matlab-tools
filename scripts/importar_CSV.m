@@ -1,5 +1,5 @@
 % 1. Leer el archivo CSV como tabla (ignorando cómo nombre a las cabeceras)
-tabla_bidmc = readtable('bidmc_02_Signals.csv');
+tabla_bidmc = readtable('NameOfTheFIle.csv');
 
 % 2. Extracción dinámica por posición de columna (Sin usar nombres explícitos)
 % Asumimos que la columna 1 siempre es el tiempo, y la columna 2 es la señal a analizar
