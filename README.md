@@ -1,8 +1,8 @@
-# PhysioNet MATLAB Tools: Native Import & Structuring Manual
+# PhysioNet MATLAB Tools:  Import Manual
 
-Welcome to the `physionet-matlab-tools` repository. This project establishes a standardized, error-free protocol for importing biomedical signals from PhysioNet into the MATLAB environment.
+ This project establishes a method, error-free protocol for importing biomedical signals from PhysioNet into the MATLAB environment.
 
-Due to the obsolescence of legacy web conversion tools (such as PhysioBank ATM, which now returns a `404 Not Found` error) and severe bugs found in native MATLAB functions and official toolboxes, this repository provides **custom-built, low-level binary parsers**. These tools abstract the complexity of medical data architectures, allowing students and researchers to focus strictly on signal processing without dealing with configuration errors.
+Due to the obsolescence of legacy web conversion tools (such as PhysioBank ATM, which now returns a `404 Not Found` error) and severe bugs found in native MATLAB functions and official toolboxes, this repository provides the solution. Allowing students and researchers to focus strictly on signal processing without dealing with configuration errors.
 
 Below is the comprehensive guide to using the custom functions provided in the `/scripts` directory for the four predominant biomedical formats.
 
@@ -12,7 +12,7 @@ Below is the comprehensive guide to using the custom functions provided in the `
 
 Flat text files are commonly used for exported datasets or lightweight time series. The primary issue when importing these files into MATLAB is that clinical headers often contain spaces or special characters, which trigger `VariableNamingRule` syntax errors or alter the variable names upon import.
 
-**The Solution:** The `open_csv.m` function uses positional matrix extraction (e.g., `tbl{:, 1}`) rather than explicit column names. This "blind" handling ensures that the time series and physiological amplitudes are successfully loaded into the Workspace regardless of the original header language or formatting.
+**The Solution:** The `open_csv.m` function uses positional matrix extraction, rather than explicit column names. This "blind" handling ensures that the time series and physiological amplitudes are successfully loaded into the Workspace regardless of the original header language or formatting.
 
 ### Usage Example:
 
@@ -36,7 +36,7 @@ The WFDB format distributes patient records into binary data files (`.dat`) and 
 
 **Known Issue:** Attempting to use the official WFDB Toolbox on modern UNIX-based architectures (such as macOS M1/M2/M3 chips) often triggers a `java.lang.UnsatisfiedLinkError`. This happens because the operating system blocks the underlying C++ code executed via the Java Virtual Machine.
 
-**The Solution:** The `abrir_wfdb.m` function is a custom native decoder. It directly reads the raw bytes from the `.dat` file and unpacks PhysioNet's "Format 212" using bitwise masks and logical shifts, completely bypassing the incompatible Java environment.
+**The Solution:** The `abrir_wfdb.m` function is a custom native decoder. It directly reads the raw bytes from the `.dat` file and unpacks PhysioNet's "Format 212" using bitwise masks and logical shifts.
 
 ### Usage Example:
 
@@ -60,7 +60,7 @@ axis tight;
 
 HDF5 files act as virtual file systems tailored for Big Data and machine learning datasets. A common roadblock for students is that advanced databases (like *HeartCycle*) pack the numeric data and text metadata together into Compound Datatypes (`structs`). If passed directly to the `plot()` function, MATLAB crashes with an *Invalid first data argument* error.
 
-**The Solution:** The `open_hdf5.m` script provides an interactive graphical interface (`uigetfile`) to select the file. It features a **smart unpacking** algorithm that inspects the internal structure, isolates the pure numeric `double` array, and discards textual metadata, delivering clean variables ready for mathematical operations.
+**The Solution:** The `open_hdf5.m` script provides an interactive graphical interface (`uigetfile`) to select the file. Isolates the pure numeric `double` array, and discards textual metadata, delivering clean variables ready for mathematical operations.
 
 ### Usage Example:
 
@@ -82,15 +82,15 @@ ylabel('Amplitude');
 
 The EDF standard encapsulates both clinical metadata and continuous multi-channel signals in a single file.
 
-**Known MATLAB Bug:** EDF+ files from PhysioNet (such as those in the *EEG Motor Movement dataset*) include textual annotation channels like "Record Time". Because MATLAB strictly forbids spaces in variable names, its native `edfread` function suffers a critical internal syntax crash (`Error in line 243: 'Record Time' is invalid`) when trying to parse the file.
+**Known MATLAB Bug:** EDF+ files from PhysioNet include textual annotation channels like "Record Time". Because MATLAB strictly forbids spaces in variable names, its native `edfread` function suffers a critical internal syntax crash when trying to parse the file.
 
-**The Solution:** The `abrir_edf.m` script is a custom binary parser built from scratch. It opens the file at the byte level (`int16`), intelligently searches for and ignores any channels labeled "Annotation" or "Record", demultiplexes the matrix, and applies the physical scaling factors (gain and offset). This entirely circumvents MATLAB's broken native function.
+**The Solution:** The `open_edf.m` script is a custom binary parser built from scratch. It opens the file at the byte level (`int16`),searches for and ignores any channels labeled "Annotation" or "Record", demultiplexes the matrix, and applies the physical scaling factors (gain and offset). This entirely circumvents MATLAB's broken native function.
 
 ### Usage Example:
 
 ```matlab
 % Extract the numeric physiological data, dodging the native 'Record Time' bug
-[sig, t, ch_name] = abrir_edf('S001R01.edf');
+[sig, t, ch_name] = open_edf('S001R01.edf');
 
 % Plot the decoded signal
 figure;
