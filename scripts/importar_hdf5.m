@@ -1,33 +1,35 @@
+function [data, internal_path] = open_hdf5(filename)
+% Load HDF5 biomedical files with smart unpacking for structs
 
-% 1. Abrir ventana de selección de archivo
-[nombre_archivo, ruta_carpeta] = uigetfile('*.h5', 'Selecciona el archivo biomédico HDF5');
-if isequal(nombre_archivo, 0)
-    error('Operación cancelada: No se ha seleccionado ningún archivo.');
+% Open UI if no file is provided
+if nargin < 1 || isempty(filename)
+    [file, path] = uigetfile('*.h5', 'Select HDF5 biomedical file');
+    if isequal(file, 0)
+        error('Operation canceled: No file selected.');
+    end
+    filename = fullfile(path, file);
 end
 
-ruta_completa = fullfile(ruta_carpeta, nombre_archivo);
-fprintf('✅ Archivo detectado: %s\n', nombre_archivo);
+% Get file info and default to the first group/dataset
+info = h5info(filename);
+internal_path = [info.Groups(1).Name, '/', info.Groups(1).Datasets(1).Name];
 
-% 2. Explorar y definir la ruta interna de los datos
-info = h5info(ruta_completa);
-ruta_interna = [info.Groups(1).Name, '/', info.Groups(1).Datasets(1).Name];
+% Read raw data
+raw_data = h5read(filename, internal_path);
 
-% 3. Extraer los datos en bruto
-datos_brutos = h5read(ruta_completa, ruta_interna);
+% Smart unpacking if data is wrapped in a struct (e.g. HeartCycle DB)
+if isstruct(raw_data)
+    fields = fieldnames(raw_data);
+    data = raw_data.(fields{1});
 
-% 4. Desempaquetado inteligente (Por si los datos vienen en una estructura)
-if isstruct(datos_brutos)
-    campos = fieldnames(datos_brutos);
-    datos_h5 = datos_brutos.(campos{1});
-    
-    if ~isnumeric(datos_h5) && length(campos) > 1
-        datos_h5 = datos_brutos.(campos{2});
+    % If first field is text (units, metadata), try the second one
+    if ~isnumeric(data) && length(fields) > 1
+        data = raw_data.(fields{2});
     end
 else
-    datos_h5 = datos_brutos;
+    data = raw_data;
 end
 
-% 5. Conversión a formato numérico estándar de MATLAB
-datos_h5 = double(datos_h5);
-
-fprintf('✅ Importación exitosa. Los datos están disponibles en la variable "datos_h5".\n');
+% Force standard numeric format
+data = double(data);
+end
